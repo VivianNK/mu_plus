@@ -1,0 +1,43 @@
+## @file -- EventAuditApp.inf
+# This Shell App writes event information to SFS.
+#
+##
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+
+
+[Defines]
+  INF_VERSION         = 0x00010000
+  BASE_NAME           = EventAuditApp
+  FILE_GUID           = b1b20d81-0623-4e73-9344-9ac7ffc3b951
+  VERSION_STRING      = 1.0
+  MODULE_TYPE         = UEFI_APPLICATION
+  ENTRY_POINT         = EventAuditAppEntryPoint
+
+[Sources]
+  EventAuditApp.c
+
+
+[Packages]
+  MdeModulePkg/MdeModulePkg.dec
+
+# todo
+[LibraryClasses]
+  PrintLib
+  DebugLib
+  UefiBootServicesTableLib
+  UefiLib
+  PeCoffGetEntryPointLib
+  UefiApplicationEntryPoint
+  ShellLib
+  UefiCpuLib
+  HobLib
+
+[Guids]
+
+# todo
+[Protocols]
+  gEfiBlockIoProtocolGuid
+  gEventAuditProtocolGuid
+  gEfiSimpleFileSystemProtocolGuid
