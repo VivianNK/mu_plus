@@ -1,24 +1,17 @@
 /** @file -- EventAuditApp.c
-This Shell App writes event information to SFS.
+This Shell App writes event information to a file in SFS.
 
 Copyright (c) Microsoft Corporation.
 SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
-// in UefiTestingPkg, need to go out two levels (MU->Common->) then go down to MU_BASECORE
-// that's why need protocol. but wit the protocol is in MU_BASECORE\MdeModule package as well..
-// #include <MU_BASECORE\MdeModulePkg\Core\Dxe\Event\Event.h>
-#include <Uefi.h>
-
-#include <Library/PrintLib.h>
-#include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiLib.h>
-#include <Guid/EventGroup.h>
-#include <Protocol/SimpleFileSystem.h>
 #include <Protocol/EventAudit.h>
 
+EVENT_AUDIT_PROTOCOL  *mEventAuditProtocol;
+EFI_FILE              *mFs_Handle;
+
 /**
-  SmmPagingAuditAppEntryPoint
+  EventAuditAppEntryPoint
 
   @param[in] ImageHandle  The firmware allocated handle for the EFI image.
   @param[in] SystemTable  A pointer to the EFI System Table.
@@ -27,10 +20,6 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
   @retval other           Some error occurred when executing this entry point.
 
 **/
-
-EVENT_AUDIT_PROTOCOL  *mEventAuditProtocol;
-EFI_FILE              *mFs_Handle;
-
 EFI_STATUS
 EFIAPI
 EventAuditAppEntryPoint (
@@ -42,13 +31,103 @@ EventAuditAppEntryPoint (
 
   DEBUG ((DEBUG_ERROR, "%a entered - %r\n", __FUNCTION__, Status));
 
-  Status = DumpaEventInfo ();
+  Status = DumpEventInfo ();
 
   DEBUG ((DEBUG_ERROR, "%a leave - %r\n", __FUNCTION__, Status));
 
   return EFI_SUCCESS;
 } // PagingAuditDxeAppEntryPoint()
 
+/**
+  DumpEventInfo
+
+  @retval EFI_STATUS  The list of event info items were written to a file in SFS successfully.
+  @retval other       Some error occurred.
+
+**/
+EFI_STATUS
+DumpEventInfo (
+  )
+{
+  EFI_STATUS  Status     = EFI_SUCCESS;
+  UINTN       EntryCount = sizeof (EVENT_INFO);
+  UINTN       EntrySize;
+  CHAR8       *Buffer;
+  CHAR8       *WriteString;
+  UINT64      Index;
+  UINTN       BufferSize;
+  UINTN       StringSize;
+  CHAR8       FormatString[] = "%a,0x%11x,%u,%u\n";
+  EVENT_INFO  *EventInfo;
+  LIST_ENTRY  *EventInfoLink;
+
+  Status = OpenVolumeSFS (&mFs_Handle);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a error opening sfs volume - %r\n", __FUNCTION__, Status));
+    return Status;
+  }
+
+  //
+  // Locate the Event Info List throught its protocol
+  //
+  Status = gBS->LocateProtocol (&gEventAuditProtocolGuid, NULL, (VOID **)&mEventAuditProtocol);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "%a error finding event audit protocol. Failed to retrieve list of events - %r\n", __FUNCTION__, Status));
+    return Status;
+  }
+
+  EntryCount = mEventAuditProtocol->NumberOfEntries;
+
+  //
+  // allocate a buffer to hold all of the entries.
+  // We'll be storing the data as strings.
+  //
+  BufferSize = (EntryCount * MAX_STR_LEN);
+  Buffer     = AllocatePool (BufferSize);
+  if (!Buffer) {
+    DEBUG ((DEBUG_ERROR, "%a Failed to allocate buffer for data dump!\n", __FUNCTION__));
+    return Status;
+  }
+
+  WriteString = Buffer;
+
+  //
+  // Add all entries to the buffer.
+  //
+  for (EventInfoLink = mEventAuditProtocol->gEventInfoList.ForwardLink;
+       EventInfoLink != &mEventAuditProtocol->gEventInfoList;
+       EventInfoLink = EventInfoLink->ForwardLink)
+  {
+    EventInfo = CR (
+                  EventInfoLink,
+                  EVENT_INFO,
+                  Link,
+                  EVENT_INFO_SIGNATURE
+                  );
+
+    StringSize = AsciiSPrint (
+                   WriteString,
+                   MAX_STR_LEN,
+                   FormatString,
+                   EventInfo->FunctionAddress,
+                   EventInfo->ImagePath,
+                   EventInfo->TimeInNanoSeconds,
+                   EventInfo->Tpl
+                   );
+
+    // increment where pointer into string buffer is to after this inserted string
+    WriteString += MAX_STR_LEN; // TODO: want to be MAX_STR_LEN for alignment and consistency? or StringLength to only use what need
+  }
+
+  //
+  // Write the buffer string to the dump file.
+  //
+  WriteBufferToFile ("EventAudit", Buffer, BufferSize);
+  FreePool (Buffer);
+  Status = EFI_SUCCESS;
+  DEBUG ((DEBUG_ERROR, "%a leave - %r\n", __FUNCTION__, Status));
+  return Status;
+}
 
 /**
 
@@ -125,7 +204,7 @@ OpenVolumeSFS (
     // it afterwards.
     //
     Status = gBS->LocateDevicePath (
-                    &gEfiBlockIoProtocolGuid,
+                    &gEfiBlockIoProtocolGuid,   // ignore error
                     &DevicePath,
                     &Handle
                     );
@@ -212,71 +291,39 @@ CleanUp:
 }
 
 /**
-  Creates a new file and writes the contents of the caller's data buffer to the file.
-
-  @param    Fs_Handle           Handle to an opened filesystem volume/partition.
-  @param    FileName            Name of the file to create.
-  @param    DataBufferSize      Size of data to buffer to be written in bytes.
-  @param    Data                Data to be written.
-
-  @retval   EFI_STATUS          File was created and data successfully written.
-  @retval   Others              The operation failed.
-
-**/
-EFI_STATUS
-CreateAndWriteFileSFS (
-  IN EFI_FILE  *Fs_Handle,
-  IN CHAR16    *FileName,
-  IN UINTN     DataBufferSize,
-  IN VOID      *Data
+ * @brief      Writes a buffer to file.
+ *
+ * @param      FileName     The name of the file being written to.
+ * @param      Buffer       The buffer to write to file.
+ * @param[in]  BufferSize   Size of the buffer.
+ * @param[in]  WriteCount   Number to append to the end of the file.
+ */
+VOID
+EFIAPI
+WriteBufferToFile (
+  IN CONST CHAR16  *FileName,
+  IN       VOID    *Buffer,
+  IN       UINTN   BufferSize
   )
 {
-  EFI_STATUS  Status      = EFI_SUCCESS;
-  EFI_FILE    *FileHandle = NULL;
+  EFI_STATUS  Status;
+  CHAR16      FileNameAndExt[MAX_STR_LEN];
 
-  DEBUG ((DEBUG_ERROR, "%a: Creating file: %s \n", __FUNCTION__, FileName));
-
-  // Create the file with RW permissions.
-  //
-  Status = Fs_Handle->Open (
-                        Fs_Handle,
-                        &FileHandle,
-                        FileName,
-                        EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE,
-                        0
-                        );
-
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to create file %s: %r !\n", __FUNCTION__, FileName, Status));
-    goto CleanUp;
+  if (mFs_Handle == NULL) {
+    Status = OpenVolumeSFS (&mFs_Handle);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "%a error opening sfs volume - %r\n", __FUNCTION__, Status));
+      return;
+    }
   }
 
-  // Write the contents of the caller's data buffer to the file.
-  //
-  Status = FileHandle->Write (
-                         FileHandle,
-                         &DataBufferSize,
-                         Data
-                         );
+  // Calculate final file name. TODO use another var for str len here
+  ZeroMem (FileNameAndExt, sizeof (CHAR16) * MAX_STR_LEN);
+  UnicodeSPrint (FileNameAndExt, MAX_STR_LEN, L"%s.dat", FileName);
 
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to write to file %s: %r !\n", __FUNCTION__, FileName, Status));
-    goto CleanUp;
-  }
-
-  FileHandle->Flush (Fs_Handle);
-
-CleanUp:
-
-  // Close the file if it was successfully opened.
-  //
-  if (FileHandle != NULL) {
-    FileHandle->Close (FileHandle);
-  }
-
-  return Status;
+  Status = CreateAndWriteFileSFS (mFs_Handle, FileNameAndExt, BufferSize, Buffer);
+  DEBUG ((DEBUG_ERROR, "%a Writing file %s - %r\n", __FUNCTION__, FileNameAndExt, Status));
 }
-
 
 /**
   Creates a new file and writes the contents of the caller's data buffer to the file.
@@ -342,38 +389,4 @@ CleanUp:
   }
 
   return Status;
-}
-
-
-/**
-  todo
-
-**/
-EFI_STATUS
-DumpEventInfo (
-  )
-{
-  EFI_STATUS  Status = EFI_SUCCESS;
-  UINTN  EventCount  = 0;
-  //  *Pte1GEntries = NULL;
-  CHAR8       TempString[MAX_STRING_SIZE];
-
-  Status = gBS->LocateProtocol (&gEventAuditProtocolGuid, NULL, (VOID **)&mEventAuditProtocol);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a error finding event audit protocol - %r\n", __FUNCTION__, Status));
-    return EFI_ERROR;
-  }
-
-  Status = OpenVolumeSFS (&mFs_Handle);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a error opening sfs volume - %r\n", __FUNCTION__, Status));
-    return EFI_ERROR;
-  }
-
-  CreateAndWriteFileSFS (mFs_Handle, L"eventInfo.csv", Pte1GCount * sizeof (PAGE_TABLE_1G_ENTRY), Pte1GEntries);
-
-
-Cleanup:
-
-  DEBUG ((DEBUG_ERROR, "%a leave - %r\n", __FUNCTION__, Status));
 }
