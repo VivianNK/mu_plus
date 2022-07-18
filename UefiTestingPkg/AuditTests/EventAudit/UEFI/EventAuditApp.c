@@ -5,7 +5,7 @@ Copyright (c) Microsoft Corporation.
 SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
-#include <EventAuditApp.h>
+#include "EventAuditApp.h"
 
 
 EVENT_AUDIT_PROTOCOL  *mEventAuditProtocol;
@@ -52,7 +52,7 @@ DumpEventInfo (
   )
 {
   EFI_STATUS  Status     = EFI_SUCCESS;
-  UINTN       EntryCount = sizeof (EVENT_INFO);
+  UINTN       EntryCount;
   CHAR8       *Buffer;
   CHAR8       *WriteString;
   UINTN       BufferSize;
@@ -76,7 +76,7 @@ DumpEventInfo (
     return Status;
   }
 
-  EntryCount = mEventAuditProtocol->NumberOfEntries;
+  EntryCount = *mEventAuditProtocol->NumberOfEntries;
 
   //
   // allocate a buffer to hold all of the entries.
@@ -94,8 +94,8 @@ DumpEventInfo (
   //
   // Add all entries to the buffer.
   //
-  for (EventInfoLink = mEventAuditProtocol->gEventInfoList.ForwardLink;
-       EventInfoLink != &mEventAuditProtocol->gEventInfoList;
+  for (EventInfoLink = mEventAuditProtocol->gEventInfoList->ForwardLink;
+       EventInfoLink != mEventAuditProtocol->gEventInfoList;
        EventInfoLink = EventInfoLink->ForwardLink)
   {
     EventInfo = CR (
