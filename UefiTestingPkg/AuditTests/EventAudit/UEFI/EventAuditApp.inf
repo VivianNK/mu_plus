@@ -8,21 +8,23 @@
 
 
 [Defines]
-  INF_VERSION         = 0x00010000
+  INF_VERSION         = 0x00010005
   BASE_NAME           = EventAuditApp
   FILE_GUID           = b1b20d81-0623-4e73-9344-9ac7ffc3b951
   VERSION_STRING      = 1.0
   MODULE_TYPE         = UEFI_APPLICATION
   ENTRY_POINT         = EventAuditAppEntryPoint
 
+
 [Sources]
   EventAuditApp.c
 
 
 [Packages]
+  MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
 
-# todo
+
 [LibraryClasses]
   PrintLib
   DebugLib
@@ -34,9 +36,7 @@
   UefiCpuLib
   HobLib
 
-[Guids]
 
-# todo
 [Protocols]
   gEfiBlockIoProtocolGuid
   gEventAuditProtocolGuid
