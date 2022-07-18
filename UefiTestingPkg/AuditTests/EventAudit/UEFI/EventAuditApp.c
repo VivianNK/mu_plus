@@ -5,7 +5,8 @@ Copyright (c) Microsoft Corporation.
 SPDX-License-Identifier: BSD-2-Clause-Patent
 **/
 
-#include <Protocol/EventAudit.h>
+#include <EventAuditApp.h>
+
 
 EVENT_AUDIT_PROTOCOL  *mEventAuditProtocol;
 EFI_FILE              *mFs_Handle;
@@ -20,7 +21,6 @@ EFI_FILE              *mFs_Handle;
   @retval other           Some error occurred when executing this entry point.
 
 **/
-// test
 EFI_STATUS
 EFIAPI
 EventAuditAppEntryPoint (
@@ -47,15 +47,14 @@ EventAuditAppEntryPoint (
 
 **/
 EFI_STATUS
+EFIAPI
 DumpEventInfo (
   )
 {
   EFI_STATUS  Status     = EFI_SUCCESS;
   UINTN       EntryCount = sizeof (EVENT_INFO);
-  UINTN       EntrySize;
   CHAR8       *Buffer;
   CHAR8       *WriteString;
-  UINT64      Index;
   UINTN       BufferSize;
   UINTN       StringSize;
   CHAR8       FormatString[] = "%a,0x%11x,%u,%u\n";
@@ -123,7 +122,7 @@ DumpEventInfo (
   //
   // Write the buffer string to the dump file.
   //
-  WriteBufferToFile ("EventAudit", Buffer, BufferSize);
+  WriteBufferToFile (L"EventAudit", Buffer, BufferSize);
   FreePool (Buffer);
   Status = EFI_SUCCESS;
   DEBUG ((DEBUG_ERROR, "%a leave - %r\n", __FUNCTION__, Status));
