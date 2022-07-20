@@ -57,7 +57,6 @@ DumpEventInfo (
   CHAR8       *WriteString;
   UINTN       BufferSize;
   UINTN       StringSize;
-  CHAR8       FormatString[] = "%a,0x%11x,%u,%u\n";
   EVENT_INFO  *EventInfo;
   LIST_ENTRY  *EventInfoLink;
 
@@ -77,6 +76,7 @@ DumpEventInfo (
   }
 
   EntryCount = *mEventAuditProtocol->NumberOfEntries;
+  DEBUG ((DEBUG_INFO, "%a:%d - Entry count: %u\n", __FUNCTION__, __LINE__, EntryCount));
 
   //
   // allocate a buffer to hold all of the entries.
@@ -104,19 +104,22 @@ DumpEventInfo (
                   Link,
                   EVENT_INFO_SIGNATURE
                   );
-
+    //DEBUG ((DEBUG_INFO, "%a:%d - AsciiPrinting: Image Name\t Func Addr Offset \t Time (Ns)\n", __FUNCTION__, __LINE__));
+    DEBUG ((DEBUG_INFO, "%a,%a,%u,%u\n", EventInfo->ImagePath, EventInfo->FunctionAddress, EventInfo->TimeInNanoSeconds, EventInfo->Tpl));
+    // todo why does %a and %x work for the strings but %s gives gibberish?
     StringSize = AsciiSPrint (
                    WriteString,
                    MAX_STR_LEN,
-                   FormatString,
-                   EventInfo->FunctionAddress,
+                   "Event,%a,%a,%u,%u\n",
                    EventInfo->ImagePath,
+                   EventInfo->FunctionAddress,
                    EventInfo->TimeInNanoSeconds,
                    EventInfo->Tpl
                    );
 
     // increment where pointer into string buffer is to after this inserted string
     WriteString += MAX_STR_LEN; // TODO: want to be MAX_STR_LEN for alignment and consistency? or StringLength to only use what need
+    // DEBUG ((DEBUG_INFO, "%a:%d - Strlen: %u \t WriteString val: %p\n", __FUNCTION__, __LINE__, StringSize, WriteString));
   }
 
   //
