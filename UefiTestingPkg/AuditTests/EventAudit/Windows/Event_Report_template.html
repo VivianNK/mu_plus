@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>Performance Report</title>
+    <title>Event Audit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.15/css/dataTables.bootstrap.min.css" />
@@ -18,11 +18,12 @@
 
 <body>
     <div class="container-fluid">
-        <h1>Firmware Performance Report</h1>
+        <h1> Event Audit Report</h1>
         <ul class="nav nav-tabs">
             <li class="active"><a data-toggle="tab" href="#tabs-1">Basic Info</a></li>
             <li><a data-toggle="tab" href="#tabs-3">Data Table</a></li>
             <li><a data-toggle="tab" href="#tabs-2">Line Chart</a></li>
+            <!-- TODO remove Messages -->
             <li><a data-toggle="tab" href="#tabs-4">Messages</a></li>
             <li><a data-toggle="tab" href="#tabs-5">About</a></li>
         </ul>
@@ -30,6 +31,7 @@
             <div id="tabs-1" class="tab-pane fade in active">
                 <h2>Product: <span id='ProductName'></span></h2>
                 <h2>Version: <span id='ProductVersion'></span></h2>
+                <!-- TODO where is PerfRunDate from? -->
                 <h2>Date Collected: <span id='PerfRunDate'></span></h2>
             </div>
             <div id="tabs-2" class="tab-pane">
@@ -52,6 +54,7 @@
                             <input id="max" type="number" class="form-control" placeholder="max start time in ms" aria-describedby="basic-addon2">
                         </div>
                         <p></p>
+                        <!-- TODO remove these buttons -->
                         <p>
                             <button id="ClearStartTimeFilter" class="btn btn-danger">Clear Start Time</button>
                         </p>
@@ -82,12 +85,12 @@
                 <table id="perfdata" class="table table-striped table-bordered table-hover" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Type</th>
-                            <th>GUID</th>
+                            <th>Event Group GUID</th>
                             <th>GUID Value</th>
-                            <th>Description</th>
+                            <th>Image Path</th>
+                            <th>Function Name</th>
+                            <th>Tpl</th>
                             <th>Start Time (ms)</th>
-                            <th>Length (ms)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -218,6 +221,7 @@
 
             $('#ProductName').text(JsonData.Data.Model);
             $('#ProductVersion').text(JsonData.Data.UefiVersion);
+            // TODO where is this coming from?
             $('#PerfRunDate').text(JsonData.Data.DateCollected);
             $('#PerfReportToolVersion').text(JsonData.Data.ReportGenVersion);
             $('#FpdtParseReportToolVersion').text(JsonData.Data.FpdtParserVersion);
