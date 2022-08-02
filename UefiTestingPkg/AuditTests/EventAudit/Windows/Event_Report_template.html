@@ -42,7 +42,7 @@
                 </div>
             </div>
             <div id="tabs-3" class="tab-pane">
-                <h2>Performance Data</h2>
+                <h2>Event Data</h2>
                 <div class="row">
                     <div class="col-xs-3">
                         <header>Start Time Filter</header>
@@ -96,13 +96,15 @@
                             <th>GUID Value</th>
                             <th>Image Path</th>
                             <th>Function Name</th>
-                            <th>Tpl</th>
                             <th>Start Time (ms)</th>
+                            <th>Duration (ms)</th>
+                            <th>Tpl</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
+            <!-- TODO remove messages tab-->
             <div id="tabs-4" class="tab-pane">
                 <h2>Tool Messages</h2>
                 <div id="messages">
@@ -122,9 +124,8 @@
                     <div class="col-xs-7">
                         <p></p>
                         <p>
-                            Perf Report Template Version: <span id="PerfReportTemplateVersion">1.00</span><br />
-                            Perf Report Tool Version: <span id='PerfReportToolVersion'></span><br />
-                            Fpdt Parse Report Tool Version: <span id='FpdtParseReportToolVersion'></span><br />
+                            Event Audit Template Version: <span id="PerfReportTemplateVersion">1.00</span><br />
+                            Event Audit Tool Version: <span id='PerfReportToolVersion'></span><br />
                         </p>
                         <h3>License</h3>
                         <hr />
@@ -242,7 +243,6 @@
             // TODO where is this coming from?
             $('#PerfRunDate').text(JsonData.Data.DateCollected);
             $('#PerfReportToolVersion').text(JsonData.Data.ReportGenVersion);
-            $('#FpdtParseReportToolVersion').text(JsonData.Data.FpdtParserVersion);
 
             $('button#ClearAll').click(function () {
                 $('table#perfdata').DataTable().rows({ selected: true }).deselect();
@@ -298,7 +298,7 @@
                 options: {
                     title: {
                         display: true,
-                        text: 'UEFI Performance Timings'
+                        text: 'UEFI Event Timeline'
                     },
                     legend: {
                         display: false
@@ -331,6 +331,7 @@
                         displayColors: false,
                         //titleFontSize : 20,
                         callbacks: {
+                            // TODO change dataset data to work for events...
                             label: function (tooltipItem, chart) {
                                 dataset = scatterChartData.datasets[tooltipItem.datasetIndex]
                                 return dataset.label + '. Start: ' + dataset.data[0].x + 'ms Length: ' + Math.round((dataset.data[1].x - dataset.data[0].x) * 1000000) / 1000000;
@@ -339,10 +340,11 @@
                     },
                 }
             });// end of Scatter chart
-
+            
+            // todo change all perfdata to eventdata
             //datatable
             var mTable = $('table#perfdata').dataTable({
-                "aaData": JsonData.Data.TimingData,
+                "aaData": JsonData.Data.EventData,
                 "bPaginate": false,
                 "aaSorting": [[4, "asc"]],
                 "scrollY": ($(window).height() - DATA_TABLE_OFFSET) + "px",
@@ -351,19 +353,19 @@
                 },
                 "aoColumnDefs": [
                     {
-                        "mData": "Type",
+                        "mData": "EventGroupGuid",
                         "aTargets": [0]
                     },
                     {
-                        "mData": "GUID",
+                        "mData": "GuidValue",
                         "aTargets": [1]
                     },
                     {
-                        "mData": "GuidValue",
+                        "mData": "ImagePath",
                         "aTargets": [2]
                     },
                     {
-                        "mData": "String",
+                        "mData": "FunctionName",
                         "aTargets": [3]
                     },
                     {
@@ -372,12 +374,16 @@
                     },
                     {
                         "aTargets": [5],
-                        "mData": "Length"
+                        "mData": "Duration"
+                    },
+                    {
+                        "aTargets": [6],
+                        "mData": "Tpl"
                     }
                 ] //end of column def
             }); //end of modules table
 
-            //messages table
+            //messages table TODO remove
             var messagesTable = $('table#toolmessages').dataTable({
                 "aaData": JsonData.Data.Messages,
                 "bPaginate": false,
@@ -411,8 +417,8 @@
                 Index = 0;
                 while (Index < Data.length) {
                     a = Data[Index];
-
-                    lineLabel = a.String;
+                    // todo update label to include group guid value
+                    lineLabel = a.FunctionName;
 
                     //push into chart dataset
                     scatterChartData.datasets.push(
@@ -426,7 +432,7 @@
                                     x: parseFloat(a.StartTime),
                                     y: Index,
                                 }, {
-                                    x: parseFloat(a.StartTime) + parseFloat(a.Length),
+                                    x: parseFloat(a.StartTime) + parseFloat(a.Duration),
                                     y: Index,
                                 }
                             ]
