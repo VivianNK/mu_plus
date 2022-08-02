@@ -37,7 +37,7 @@ EventAuditAppEntryPoint (
   DEBUG ((DEBUG_ERROR, "%a leave - %r\n", __FUNCTION__, Status));
 
   return EFI_SUCCESS;
-} // PagingAuditDxeAppEntryPoint()
+} // EventAuditAppEntryPoint()
 
 /**
   DumpEventInfo
@@ -76,7 +76,7 @@ DumpEventInfo (
   }
 
   EntryCount = *mEventAuditProtocol->NumberOfEntries;
-  DEBUG ((DEBUG_INFO, "%a:%d - Entry count: %u\n", __FUNCTION__, __LINE__, EntryCount));
+  DEBUG ((DEBUG_INFO, "%a:%d - vnk: Entry count: %u\n", __FUNCTION__, __LINE__, EntryCount));
 
   //
   // allocate a buffer to hold all of the entries.
@@ -94,8 +94,8 @@ DumpEventInfo (
   //
   // Add all entries to the buffer.
   //
-  for (EventInfoLink = mEventAuditProtocol->gEventInfoList->ForwardLink;
-       EventInfoLink != mEventAuditProtocol->gEventInfoList;
+  for (EventInfoLink = mEventAuditProtocol->EventInfoList->ForwardLink;
+       EventInfoLink != mEventAuditProtocol->EventInfoList;
        EventInfoLink = EventInfoLink->ForwardLink)
   {
     EventInfo = CR (
@@ -104,21 +104,25 @@ DumpEventInfo (
                   Link,
                   EVENT_INFO_SIGNATURE
                   );
+    
+    DEBUG ((DEBUG_INFO, "%a:%d -vnk: after CR \n", __FUNCTION__, __LINE__));
     //DEBUG ((DEBUG_INFO, "%a:%d - AsciiPrinting: Image Name\t Func Addr Offset \t Time (Ns)\n", __FUNCTION__, __LINE__));
-    DEBUG ((DEBUG_INFO, "%a,%a,%u,%u\n", EventInfo->ImagePath, EventInfo->FunctionAddress, EventInfo->TimeInNanoSeconds, EventInfo->Tpl));
+    DEBUG ((DEBUG_INFO, "vnk: %a,%a,%u,%u,%g,%u\n", EventInfo->ImagePath, EventInfo->FunctionAddress, EventInfo->StartTimeNanoSeconds, EventInfo->Duration, EventInfo->EventGroup, EventInfo->Tpl));
     // todo why does %a and %x work for the strings but %s gives gibberish?
     StringSize = AsciiSPrint (
                    WriteString,
                    MAX_STR_LEN,
-                   "Event,%a,%a,%u,%u\n",
+                   "Event,%a,%a,%u,%u,%g,%u\n",
                    EventInfo->ImagePath,
                    EventInfo->FunctionAddress,
-                   EventInfo->TimeInNanoSeconds,
+                   EventInfo->StartTimeNanoSeconds,
+                   EventInfo->Duration,
+                   EventInfo->EventGroup,
                    EventInfo->Tpl
                    );
 
     // increment where pointer into string buffer is to after this inserted string
-    WriteString += MAX_STR_LEN; // TODO: want to be MAX_STR_LEN for alignment and consistency? or StringLength to only use what need
+    WriteString += 1 + StringSize; // TODO: want to be MAX_STR_LEN for alignment and consistency? or AsciiStrLen() to only use what need
     // DEBUG ((DEBUG_INFO, "%a:%d - Strlen: %u \t WriteString val: %p\n", __FUNCTION__, __LINE__, StringSize, WriteString));
   }
 
