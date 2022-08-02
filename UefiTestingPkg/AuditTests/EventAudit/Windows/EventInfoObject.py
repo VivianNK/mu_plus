@@ -6,6 +6,8 @@ import logging
 # Copyright (C) Microsoft Corporation. All rights reserved.
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
+
+
 class EventInfo(object):
     image_path = ""
     function_addr = ""
@@ -13,7 +15,7 @@ class EventInfo(object):
     tpl = 0
     function_name = ""
 
-    # 
+    #
     def __init__(self, image_path, function_addr, time_ns, tpl):
         self.image_path = image_path
         self.function_addr = function_addr

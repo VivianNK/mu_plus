@@ -4,9 +4,11 @@
 <head>
     <title>Event Audit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css"
+        href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.15/css/dataTables.bootstrap.min.css" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/1.2.2/css/select.bootstrap.min.css " />
+    <link rel="stylesheet" type="text/css"
+        href="https://cdn.datatables.net/select/1.2.2/css/select.bootstrap.min.css " />
     <style>
         div.attribution {
             border: 1px solid #ddd;
@@ -46,12 +48,14 @@
                         <header>Start Time Filter</header>
                         <div class="input-group">
                             <span class="input-group-addon" id="basic-addon1">MIN</span>
-                            <input id="min" type="number" class="form-control" placeholder="min start time in ms" aria-describedby="basic-addon1">
+                            <input id="min" type="number" class="form-control" placeholder="min start time in ms"
+                                aria-describedby="basic-addon1">
                         </div>
                         <p></p>
                         <div class="input-group">
                             <span class="input-group-addon" id="basic-addon2">MAX</span>
-                            <input id="max" type="number" class="form-control" placeholder="max start time in ms" aria-describedby="basic-addon2">
+                            <input id="max" type="number" class="form-control" placeholder="max start time in ms"
+                                aria-describedby="basic-addon2">
                         </div>
                         <p></p>
                         <!-- TODO remove these buttons -->
@@ -63,12 +67,14 @@
                         <header>Length Filter</header>
                         <div class="input-group">
                             <span class="input-group-addon" id="basic-addon3">MIN</span>
-                            <input id="minLength" type="number" class="form-control" placeholder="min length in ms" aria-describedby="basic-addon3">
+                            <input id="minLength" type="number" class="form-control" placeholder="min length in ms"
+                                aria-describedby="basic-addon3">
                         </div>
                         <p></p>
                         <div class="input-group">
                             <span class="input-group-addon" id="basic-addon4">MAX</span>
-                            <input id="maxLength" type="number" class="form-control" placeholder="max length in ms" aria-describedby="basic-addon4">
+                            <input id="maxLength" type="number" class="form-control" placeholder="max length in ms"
+                                aria-describedby="basic-addon4">
                         </div>
                         <p></p>
                         <p>
@@ -79,7 +85,8 @@
                         <header>Actions</header>
                         Filters: <button id="ClearAllFilter" class="btn btn-danger">Clear All</button>
                         <p></p>
-                        Table Entries: <button id="SelectAll" type="button" class="btn btn-success">Select All</button> <button id="ClearAll" class="btn btn-danger">Clear Selection</button><br />
+                        Table Entries: <button id="SelectAll" type="button" class="btn btn-success">Select All</button>
+                        <button id="ClearAll" class="btn btn-danger">Clear Selection</button><br />
                     </div>
                 </div>
                 <table id="perfdata" class="table table-striped table-bordered table-hover" cellspacing="0">
@@ -125,9 +132,14 @@
                             <p>
                                 <span class="copyright">Copyright (c) 2017, Microsoft Corporation</span><br />
                                 <span class="license">
-                                    All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:<br>
-                                    1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.<br>
-                                    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.<br><br>
+                                    All rights reserved. Redistribution and use in source and binary forms, with or
+                                    without modification, are permitted provided that the following conditions are
+                                    met:<br>
+                                    1. Redistributions of source code must retain the above copyright notice, this list
+                                    of conditions and the following disclaimer.<br>
+                                    2. Redistributions in binary form must reproduce the above copyright notice, this
+                                    list of conditions and the following disclaimer in the documentation and/or other
+                                    materials provided with the distribution.<br><br>
 
                                     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
                                     ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -152,16 +164,22 @@
     </div>
     <!-- Json Data for performance measurement -->
     <script>
-        var JsonData = %TO_BE_FILLED_IN_BY_PYTHON_SCRIPT%;
+        var JsonData = % TO_BE_FILLED_IN_BY_PYTHON_SCRIPT %;
     </script>
 
     <!-- Javascript libraries -->
-    <script type="text/javascript" charset="utf8" src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.2.1.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/bootstrap.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.15/js/dataTables.bootstrap.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/select/1.2.2/js/dataTables.select.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://cdn.datatables.net/1.10.15/js/dataTables.bootstrap.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://cdn.datatables.net/select/1.2.2/js/dataTables.select.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
 
     <script>
 
@@ -327,7 +345,7 @@
                 "aaData": JsonData.Data.TimingData,
                 "bPaginate": false,
                 "aaSorting": [[4, "asc"]],
-                "scrollY": ($(window).height() -DATA_TABLE_OFFSET) + "px",
+                "scrollY": ($(window).height() - DATA_TABLE_OFFSET) + "px",
                 "select": {
                     "style": 'os'
                 },
@@ -434,7 +452,7 @@
         //
         //To handle scroll tables adjust the height based on the window height.
         //
-        $(window).resize(function() {
+        $(window).resize(function () {
             var newHm = $(window).height() - MESSAGES_TABLE_OFFSET;
             $("#toolmessages_wrapper .dataTables_scrollBody").height(newHm);
 
@@ -444,4 +462,5 @@
 
     </script>
 </body>
+
 </html>
