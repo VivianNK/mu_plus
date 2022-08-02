@@ -14,6 +14,8 @@ import os
 from re import T
 import sys
 import argparse
+# input csv path = "C:\\msft\\EventAudit.csv"
+# output html path = "C:\\msft\\EventReport.html"
 
 #Add script dir to path for import
 sp = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -22,16 +24,6 @@ sys.path.append(sp)
 reportGenVersion = '1.01'
 
 from EventInfoObject import *
-
-
-VERSION = "0.90"
-
-class ParsingTool(object):
-    def __init__(self, DatFolderPath):
-        self.Logger = logging.getLogger("ParsingTool")
-        self.Events = []
-        self.DatFolderPath = DatFolderPath
-        self.ErrorMsg = []
 
 def get_func_name(map_path, img_offset_hex):
     #
@@ -74,11 +66,11 @@ def get_image_map_path(path):
 
 def main():
      # Set up command line arguments
-    parser = argparse.ArgumentParser(description='FPDT XML Parser Tool')
-    parser.add_argument('-t', '--OutputText', dest='output_text_file', help='Name of the output text file which will contain the boot timing info', default=None)
-    parser.add_argument('-r', '--OutputHtml', dest='output_html_file', help='Name of the output HTML file which will contain the boot timing info', default=None)
+    parser = argparse.ArgumentParser(description='Event Audit Parser Tool')
+    #parser.add_argument('-t', '--OutputText', dest='output_text_file', help='Name of the output text file which will contain the boot timing info', default=None)
     parser.add_argument('-i', '--InputCsvFile', help='Path to the input Csv file with raw data', default=None)
-    parser.add_argument('-s', '--SrcTreeRoot', help="Root of UEFI Code tree to parse for guids", nargs="*", default=None)
+    parser.add_argument('-r', '--OutputHtml', dest='output_html_file', help='Name of the output HTML file which will contain the boot timing info', default=None)
+    #parser.add_argument('-s', '--SrcTreeRoot', help="Root of UEFI Code tree to parse for guids", nargs="*", default=None)
     #parser.add_argument('-d', '--debug', help='enable debug output', action='store_true')
     #parser.add_argument("-l", "--OutputDebugLog", dest='OutputDebugLog', help="Log all debug and error output to file", default=None)
     options = parser.parse_args()
@@ -92,10 +84,10 @@ def main():
             # Create a new html report file
             html_report = open(options.output_html_file, 'w')
 
-    if(options.SrcTreeRoot is not None):
-        for srcTree in options.SrcTreeRoot:
-            logging.critical("Parsing Code Tree for function names: %s" % srcTree)
-            # TODO parse for func address
+    # if(options.SrcTreeRoot is not None):
+    #     for srcTree in options.SrcTreeRoot:
+    #         logging.critical("Parsing Code Tree for function names: %s" % srcTree)
+    #         # TODO parse for func address
 
     logging.critical("Parsing Event info csv")
 
@@ -107,17 +99,23 @@ def main():
     # dictionary label:startTime
     eventsDictCount = {}
 
+    if options.InputCsvFile is None or not os.path.exists(options.InputCsvFile):
+        logging.critical("No Input Csv File")
+        return -4
+
     # parse csv file
     with open(options.InputCsvFile) as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
+        reader = csv.reader((line.replace('\0', '') for line in csvfile), delimiter=',')
         # entry format: Event,[1]<Img Path>,[2]<Function Address Offset>,[3]<StartTime>,[4]<Duration>,[5]<Event Group GUID>,[6]<Tpl>
         for row in reader:
+            if len(row) < 6:
+                continue
             image_path = row[1]
             function_addr = row[2]
-            start_time = row[3]
-            duration = row[4]
+            start_time = float(row[3]) / 1000000 # convert nanoseconds to milliseconds
+            duration = float(row[4]) / 1000000
             event_group_guid = row[5]
-            tpl = row[6]
+            tpl = float(row[6])
             build_start = image_path.find('\\Build\\')
             image_path_short = image_path[build_start+7:]
 
@@ -136,7 +134,8 @@ def main():
                 eventsDictCount[label] = eventsDictCount[label] + 1
             else:
                 eventsDictCount[label] = 1
-            eventList.append(idCounter, event_group_guid, "TBD", image_path_short, function_name, start_time, duration, tpl)
+            
+            eventList.append((idCounter, event_group_guid, "TBD", image_path_short, function_name, start_time, duration, tpl))
             # out_str = function_name + "\t" + event.time_ns + event.tpl + event.image_path + "\n"
             # events_called.append(event.fields_as_str_arr())
             idCounter += 1
@@ -144,23 +143,28 @@ def main():
     if (html_report is not None):
         logging.critical("Writing HTML Report")
         template = open(os.path.join(sp, "Event_Report_template.html"), "r")
+        # 
+        # write every line as it is until super special line to insert json
+        # todo - just replace? the one line? build json in string then just write once
+        #
         for line in template.readlines():
             # write data as json
             if "%TO_BE_FILLED_IN_BY_PYTHON_SCRIPT%" in line:
                 html_report.write("        var JsonData = {\"Data\": {")
 
                 html_report.write("\"Model\": \"%s\"," % "TODO - get model of system?")
-                html_report.write("\"UefiVersion\": \"%s\"," % "TODO - get Uefi version?"
-                html_report.write("\"DateCollected\": \"%s\"," % "TODO - get Date Collected")
+                html_report.write("\"UefiVersion\": \"%s\"," % "TODO - get Uefi version?")
+                html_report.write("\"DateCollected\": \"%s\"," % datetime.datetime.strftime(datetime.datetime.now(), "%A, %B %d, %Y %I:%M%p" ))
                 html_report.write("\"ReportGenVersion\": \"%s\"," % reportGenVersion)
-                html_report.write("\"TimingData\": [")
+                html_report.write("\"EventData\": [")
 
                 first = True
-                for timing in timingList:
+                for event in eventList:
                     if (not first):
                         html_report.write(",")
                     first = False
-                    html_report.write("{\"ID\": \"%s\",\"Type\": \"%s\",\"GUID\": \"%s\",\"GuidValue\": \"%s\",\"String\": \"%s\",\"StartTime\": \"%.6f\",\"Length\": \"%.6f\"}" % (timing[0], timing[1], timing[2], timing[3], timing[4], timing[5], timing[6]))
+                    # event_group_guid, "TBD", image_path_short, function_name, start_time, duration, tpl
+                    html_report.write("{\"ID\": \"%s\",\"EventGroupGuid\": \"%s\",\"GuidValue\": \"%s\",\"ImagePath\": \"%s\",\"FunctionName\": \"%s\",\"StartTime\": \"%.6f\",\"Duration\": \"%.6f\",\"Tpl\": \"%.6f\"}" % (event[0], event[1], event[2], event[3], event[4], event[5], event[6], event[7]))
                 html_report.write("],")
 
                 html_report.write("}};")
@@ -168,6 +172,7 @@ def main():
                 html_report.write(line)
         template.close()
         html_report.close()
+        return 0
 
 if __name__ == '__main__':
     # todo understand logger and formatter? as i understand i need
