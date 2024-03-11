@@ -12,12 +12,60 @@ using namespace winrt;
 using namespace Windows::Foundation;
 using namespace std;
 
+
+//
+// Elevate current process system environment privileges to admin
+//
+int ElevateCurrentPrivileges()
+{
+	HANDLE ProcessHandle = GetCurrentProcess();
+    DWORD DesiredAccess = TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY;;
+    HANDLE hProcessToken;
+    TOKEN_PRIVILEGES tp;
+    LUID luid;
+    int Status = 0;
+
+    if (!LookupPrivilegeValue(NULL, L"SeSystemEnvironmentPrivilege", &luid)) {
+        Status = GetLastError();
+        printf("LookupPrivilegeValue failed with error %u\n", Status);
+        return Status;
+    }
+
+    if (!OpenProcessToken(ProcessHandle, DesiredAccess, &hProcessToken)) {
+        Status = GetLastError();
+        cout << "Failed to open process token\n";
+        return Status;
+    }
+
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if (!AdjustTokenPrivileges(hProcessToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL)) {
+        Status = GetLastError();
+        if (Status == ERROR_NOT_ALL_ASSIGNED)
+
+        {
+            printf("The token does not have the specified privilege. \n");
+            return Status;
+        }
+        else
+        {
+            printf("AdjustTokenPrivileges failed with error %u\n", Status);
+            return Status;
+        }
+    }
+
+    CloseHandle(ProcessHandle);
+    return SUCCESS;
+}
+
 //
 // Create log file by retrieving AdvancedLogger variables from UEFI interface
 //
 int ReadLogFromUefiInterface(fstream& lfile)
 {
-    cout << "in ReadLogFromUefiInterface\n" << endl;
+    cout << "in ReadLogFromUefiInterface\n";
 
     int  Status = 0;
     int i = 0;
@@ -89,10 +137,14 @@ int ReadLogFromUefiInterface(fstream& lfile)
     return Status;
 }
 
+//
+// Process raw log file into messages
+//
 int ProcessMessages(fstream& logfile, ofstream& outfstream)
 {
-    int Status = SUCCESS;
     cout << "in ProcessMessages\n";
+    map<char, char> logInfo;
+    int Status = SUCCESS;
     //
     // Get logfile size
     //
@@ -106,17 +158,30 @@ int ProcessMessages(fstream& logfile, ofstream& outfstream)
         return Status;
     }
 
-    //can i just convert the file to a char buffer?
-    vector<unsigned char> buffer(std::istreambuf_iterator<char>(logfile), {});
-    /*vector<char> logBuffer(lfsize);
+    // Convert the file to an unsigned char (uint_8) buffer
+    vector<unsigned char> bytesbuf(std::istreambuf_iterator<char>(logfile), {});
+    /*vector<unsigned char> logBuffer(lfsize);
     logfile.read(logBuffer.data(), lfsize);*/
     /* OR todo dynamically allocate output buffer
     vector<char> retBuffer(lfsize);*/
 
-    // TODO process logBuffer into output buffer
+    // TODO process raw logBuffer into messages for output buffer
+    cout << "buffer size: " << bytesbuf.size() << endl;
+
+    // LoggerInfo["Signature"] = InFile.read(4).decode('utf-8', 'replace')
+    //Version = struct.unpack("=H", InFile.read(2))[0]
+    //    LoggerInfo["Version"] = Version
+    //    LoggerInfo["BaseTime"] = 0
+    //    InFile.read(2)[0]           # Skip reserved field
+
+    //HYBRID_ADVANCED_LOGGER_INFO* pLoggerInfo = (HYBRID_ADVANCED_LOGGER_INFO*) malloc(sizeof(HYBRID_ADVANCED_LOGGER_INFO));
+    INT32 sigTmp= (bytesbuf[3] << 24) | (bytesbuf[2] << 16) | (bytesbuf[1] << 8) | (bytesbuf[0]);
+    //pLoggerInfo->Signature = sigTmp;
+    // todo just use c array.strcut that has alog has pointer to start of law. 
 
 
-    const char* constBuf = reinterpret_cast<const char*>(buffer.data());
+
+    const char* constBuf = reinterpret_cast<const char*>(bytesbuf.data());
     outfstream.write(constBuf, lfsize);
     if (outfstream.fail()) {
         cout << "failed to write to file\n";
@@ -133,64 +198,28 @@ int ProcessMessages(fstream& logfile, ofstream& outfstream)
 
 int main(int argc, char** argv)
 {
-
-    // todo break out priviledge adjustment into a function
     fstream logfile;
     ofstream outfstream;
-    char* filename = argv[1];
+    char* argFilename;
     const char* newRawFilename = "C:\\Users\\vnowkakeane\\Documents\\Scratch\\new_raw_logfile.bin";
     const char* newOutFilename = "C:\\Users\\vnowkakeane\\Documents\\Scratch\\new_parsed_logfile.txt";
-    HANDLE ProcessHandle = GetCurrentProcess();
-    DWORD DesiredAccess = TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY;
-    HANDLE hProcessToken;
-    TOKEN_PRIVILEGES tp;
-    LUID luid;
     int Status = 0;
 
-    if (!LookupPrivilegeValue(NULL, L"SeSystemEnvironmentPrivilege", &luid)) {
-		Status = GetLastError();
-		printf("LookupPrivilegeValue failed with error %u\n", Status);
+    Status = ElevateCurrentPrivileges();
+    if (Status !=0) {
+        cout << "Failed to elevate privileges, errno:" << Status << endl;
 		return Status;
-	}
-
-    if (!OpenProcessToken(ProcessHandle, DesiredAccess, &hProcessToken)) {
-        Status = GetLastError();
-        cout << "Failed to open process token\n";
-        return Status;
     }
-
-    tp.PrivilegeCount = 1;
-    tp.Privileges[0].Luid = luid;
-    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-    if (!AdjustTokenPrivileges(hProcessToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL)) {
-        Status = GetLastError();
-        if (Status == ERROR_NOT_ALL_ASSIGNED)
-
-        {
-            printf("The token does not have the specified privilege. \n");
-            return Status;
-        }
-        else
-        {
-			printf("AdjustTokenPrivileges failed with error %u\n", Status);
-			return Status;
-		}
-    }
-
-    CloseHandle(ProcessHandle);
 
     //
-    // Create or open log file
+    // Create or open binary log file
     //
     if (argc < 2) {
-        // create
-        cout << "call func with logfile\n";
         // create temporary file
         // FILE* pFile = tmpfile();
         logfile.open(newRawFilename, ios::out);
         if (!logfile.is_open()) {
-            cout << "new logfile can't be opened\n";
+            cout << "new raw logfile can't be opened\n";
             Status = CONS_ERROR;
             return Status;
         }
@@ -213,11 +242,12 @@ int main(int argc, char** argv)
         logfile.open(newRawFilename, ios::in | ios::binary);
     }
     else {
-        logfile.open(filename, ios::in | ios::binary);
+        argFilename = argv[1];
+        logfile.open(argFilename, ios::in | ios::binary);
     }
 
     if (!logfile.is_open()) {
-        cerr << "Failed to open log file: " << filename << endl;
+        cerr << "Failed to open raw log file: " << endl;
         return CONS_ERROR;
     }
 
@@ -228,9 +258,8 @@ int main(int argc, char** argv)
         return Status;
     }
 
-
     //
-    // Process Message
+    // Process binary log file into messages
     //
     try {
         ProcessMessages(logfile, outfstream);
