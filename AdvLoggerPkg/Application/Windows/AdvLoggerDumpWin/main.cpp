@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <map>
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -88,8 +89,9 @@ int ReadLogFromUefiInterface(fstream& lfile)
     return Status;
 }
 
-vector<char> ProcessMessages(fstream& logfile)
+int ProcessMessages(fstream& logfile, ofstream& outfstream)
 {
+    int Status = SUCCESS;
     cout << "in ProcessMessages\n";
     //
     // Get logfile size
@@ -99,30 +101,47 @@ vector<char> ProcessMessages(fstream& logfile)
     size_t lfsize = logfile.tellg();
     logfile.seekg(0, ios::beg);
 
+    if (lfsize == 0) {
+        Status = FILE_ERROR;
+        return Status;
+    }
+
     //can i just convert the file to a char buffer?
-    vector<char> logBuffer(lfsize);
-    logfile.read(logBuffer.data(), lfsize);
-
-
-
-    // todo dynamically allocate output buffer
-    vector<char> retBuffer(lfsize);
+    vector<unsigned char> buffer(std::istreambuf_iterator<char>(logfile), {});
+    /*vector<char> logBuffer(lfsize);
+    logfile.read(logBuffer.data(), lfsize);*/
+    /* OR todo dynamically allocate output buffer
+    vector<char> retBuffer(lfsize);*/
 
     // TODO process logBuffer into output buffer
 
 
-	return retBuffer;
+    const char* constBuf = reinterpret_cast<const char*>(buffer.data());
+    outfstream.write(constBuf, lfsize);
+    if (outfstream.fail()) {
+        cout << "failed to write to file\n";
+		Status = FILE_ERROR;
+	}   
+
+    //   // print buffer to file
+//   // todo get 
+//   //outfstream.write(buffer.data(), lfsize);
+
+	return Status;
 }
 
 
 int main(int argc, char** argv)
 {
+
+    // todo break out priviledge adjustment into a function
     fstream logfile;
     ofstream outfstream;
     char* filename = argv[1];
+    const char* newRawFilename = "C:\\Users\\vnowkakeane\\Documents\\Scratch\\new_raw_logfile.bin";
+    const char* newOutFilename = "C:\\Users\\vnowkakeane\\Documents\\Scratch\\new_parsed_logfile.txt";
     HANDLE ProcessHandle = GetCurrentProcess();
-    DWORD DesiredAccess = TOKEN_ADJUST_PRIVILEGES;
-    PHANDLE tokenHandle;  // using this as an arg for OpenProcessToken didn't work... why? Also why were there examples of using it as an arg pointing to the processhandle?
+    DWORD DesiredAccess = TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY;
     HANDLE hProcessToken;
     TOKEN_PRIVILEGES tp;
     LUID luid;
@@ -134,7 +153,7 @@ int main(int argc, char** argv)
 		return Status;
 	}
 
-    if (!OpenProcessToken(ProcessHandle, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hProcessToken)) {
+    if (!OpenProcessToken(ProcessHandle, DesiredAccess, &hProcessToken)) {
         Status = GetLastError();
         cout << "Failed to open process token\n";
         return Status;
@@ -157,11 +176,9 @@ int main(int argc, char** argv)
 			printf("AdjustTokenPrivileges failed with error %u\n", Status);
 			return Status;
 		}
-        return Status;
     }
 
     CloseHandle(ProcessHandle);
-
 
     //
     // Create or open log file
@@ -171,7 +188,7 @@ int main(int argc, char** argv)
         cout << "call func with logfile\n";
         // create temporary file
         // FILE* pFile = tmpfile();
-        logfile.open("C:\\Users\\vnowkakeane\\Documents\\Scratch\\new_logfile.bin", ios::out);
+        logfile.open(newRawFilename, ios::out);
         if (!logfile.is_open()) {
             cout << "new logfile can't be opened\n";
             Status = CONS_ERROR;
@@ -183,40 +200,47 @@ int main(int argc, char** argv)
 			cerr << "Error reading log, exiting\n";
 			return CONS_ERROR;
 		}
+        else {
+            cout << "Raw binary file created\n";
+        }
+
+        logfile.close();
+        if (logfile.is_open()) {
+			cout << "file is still open after trying to close\n";
+            return CONS_ERROR;
+        }
+
+        logfile.open(newRawFilename, ios::in | ios::binary);
     }
     else {
-        logfile.open(filename, ios::in);
+        logfile.open(filename, ios::in | ios::binary);
     }
 
     if (!logfile.is_open()) {
-        cerr << "Failed to open file: " << filename << endl;
+        cerr << "Failed to open log file: " << filename << endl;
         return CONS_ERROR;
     }
 
-   
+    outfstream.open(newOutFilename, ios::out);
+    if (!logfile.is_open()) {
+        cout << "new logfile can't be opened\n";
+        Status = CONS_ERROR;
+        return Status;
+    }
 
-    
 
- //   //
- //   // Process Message
- //   //
- //   try {
- //       ProcessMessages(logfile);
- //   }
- //   catch (const exception& e) {
-	//	cerr << "Error: " << e.what() << endl;
-	//	return CONS_ERROR;
-	//}
-
- //   outfstream.open("output.txt");
-
- //   // print buffer to file
- //   // todo get 
- //   //outfstream.write(buffer.data(), lfsize);
-
+    //
+    // Process Message
+    //
+    try {
+        ProcessMessages(logfile, outfstream);
+    }
+    catch (const exception& e) {
+		cerr << "Error: " << e.what() << endl;
+		return CONS_ERROR;
+	}
 
     logfile.close();
     outfstream.close();
-
     return SUCCESS;
 }
