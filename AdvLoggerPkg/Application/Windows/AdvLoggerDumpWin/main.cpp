@@ -6,7 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#include <map>
+#include <codecvt>
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -157,41 +157,47 @@ int ProcessMessages(fstream& logfile, ofstream& outfstream)
         Status = FILE_ERROR;
         return Status;
     }
+    cout << "file size: " << lfsize << endl;
 
-    // Convert the file to an unsigned char (uint_8) buffer
-    vector<unsigned char> bytesbuf(std::istreambuf_iterator<char>(logfile), {});
-    /*vector<unsigned char> logBuffer(lfsize);
-    logfile.read(logBuffer.data(), lfsize);*/
-    /* OR todo dynamically allocate output buffer
-    vector<char> retBuffer(lfsize);*/
+    HYBRID_ADVANCED_LOGGER_INFO* pLoggerInfo = (HYBRID_ADVANCED_LOGGER_INFO*) malloc(sizeof(HYBRID_ADVANCED_LOGGER_INFO));
 
+    logfile.read((char*)&pLoggerInfo->Signature, sizeof(pLoggerInfo->Signature));
+    cout << "Signature: " << pLoggerInfo->Signature << endl;
+
+    string sigStr = to_string(pLoggerInfo->Signature);
+
+   /* wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert;
+    string utf8 = convert.to_bytes(sigStr);*/
+
+    const char* sigTmp = sigStr.c_str();
+    cout << "Signature String: " << sigTmp << endl;
+
+
+    if (sigTmp != "ALOG") {
+        cout << "Invalid signature\n";
+        Status = LOG_ERROR;
+        return Status;
+    }
     // TODO process raw logBuffer into messages for output buffer
-    cout << "buffer size: " << bytesbuf.size() << endl;
+    logfile.read((char*)&pLoggerInfo->Version, sizeof(pLoggerInfo->Version));
+    cout << "Version: " << pLoggerInfo->Version << endl;
 
-    // LoggerInfo["Signature"] = InFile.read(4).decode('utf-8', 'replace')
-    //Version = struct.unpack("=H", InFile.read(2))[0]
-    //    LoggerInfo["Version"] = Version
-    //    LoggerInfo["BaseTime"] = 0
-    //    InFile.read(2)[0]           # Skip reserved field
-
-    //HYBRID_ADVANCED_LOGGER_INFO* pLoggerInfo = (HYBRID_ADVANCED_LOGGER_INFO*) malloc(sizeof(HYBRID_ADVANCED_LOGGER_INFO));
-    INT32 sigTmp= (bytesbuf[3] << 24) | (bytesbuf[2] << 16) | (bytesbuf[1] << 8) | (bytesbuf[0]);
-    //pLoggerInfo->Signature = sigTmp;
-    // todo just use c array.strcut that has alog has pointer to start of law. 
+    logfile.seekg(2, ios::cur); // skip reserved field
 
 
-
-    const char* constBuf = reinterpret_cast<const char*>(bytesbuf.data());
+    /*const char* constBuf = reinterpret_cast<const char*>(bytesbuf.data());
     outfstream.write(constBuf, lfsize);
     if (outfstream.fail()) {
         cout << "failed to write to file\n";
 		Status = FILE_ERROR;
-	}   
+	}
+    */
 
     //   // print buffer to file
 //   // todo get 
 //   //outfstream.write(buffer.data(), lfsize);
 
+    free((void*)pLoggerInfo);
 	return Status;
 }
 
