@@ -191,7 +191,7 @@ typedef struct {
     UINT32                DebugLevel;             // Debug Level
     UINT64                TimeStamp;              // Time stamp
     UINT16                MessageLen;             // Number of bytes in Message
-    CHAR8                 MessageText[];          // Message Text
+    CHAR8                 MessageText[1];          // Message Text
  } ADVANCED_LOGGER_MESSAGE_ENTRY_V1;
 #pragma pack(pop)
 
@@ -211,7 +211,7 @@ typedef struct {
     UINT16    MessageLen;                           // Number of bytes in Message
     UINT16    MessageOffset;                        // Offset of Message from start of structure,
                                                     // used to calculate the address of the Message
-    CHAR8     MessageText[];                        // Message Text
+    CHAR8     MessageText[1];                        // Message Text
  } ADVANCED_LOGGER_MESSAGE_ENTRY_V2;
 #pragma pack(pop)
 

@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include "main.h"
+﻿#include "main.h"
 #include <Windows.h>
 #include <shellapi.h>
 #include <stdio.h>
@@ -11,7 +10,6 @@
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace std;
-
 
 //
 // Elevate current process system environment privileges to admin
@@ -160,6 +158,11 @@ int ProcessMessages(fstream& logfile, ofstream& outfstream)
     cout << "file size: " << lfsize << endl;
 
     HYBRID_ADVANCED_LOGGER_INFO* pLoggerInfo = (HYBRID_ADVANCED_LOGGER_INFO*) malloc(sizeof(HYBRID_ADVANCED_LOGGER_INFO));
+    if (pLoggerInfo == NULL) {
+		cout << "Failed to allocate memory for logger info\n";
+		Status = CONS_ERROR;
+		return Status;
+	}
 
     logfile.read((char*)&pLoggerInfo->Signature, sizeof(pLoggerInfo->Signature));
     cout << "Signature: " << pLoggerInfo->Signature << endl;
@@ -173,7 +176,7 @@ int ProcessMessages(fstream& logfile, ofstream& outfstream)
     cout << "Signature String: " << sigTmp << endl;
 
 
-    if (sigTmp != "ALOG") {
+    if (strcmp(sigTmp, "ALOG") != 0) {
         cout << "Invalid signature\n";
         Status = LOG_ERROR;
         return Status;
@@ -194,8 +197,8 @@ int ProcessMessages(fstream& logfile, ofstream& outfstream)
     */
 
     //   // print buffer to file
-//   // todo get 
-//   //outfstream.write(buffer.data(), lfsize);
+   // todo get 
+   // outfstream.write(buffer.data(), lfsize);
 
     free((void*)pLoggerInfo);
 	return Status;
@@ -207,8 +210,8 @@ int main(int argc, char** argv)
     fstream logfile;
     ofstream outfstream;
     char* argFilename;
-    const char* newRawFilename = "C:\\Users\\vnowkakeane\\Documents\\Scratch\\new_raw_logfile.bin";
-    const char* newOutFilename = "C:\\Users\\vnowkakeane\\Documents\\Scratch\\new_parsed_logfile.txt";
+    const char* newRawFilename = "out\\new_raw_logfile.bin";
+    const char* newOutFilename = "out\\new_parsed_logfile.txt";
     int Status = 0;
 
     Status = ElevateCurrentPrivileges();
