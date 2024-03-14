@@ -135,83 +135,11 @@ int ReadLogFromUefiInterface(fstream& lfile)
     return Status;
 }
 
-//
-// Process raw log file into messages
-//
-int ProcessMessages(fstream& logfile, ofstream& outfstream)
-{
-    cout << "in ProcessMessages\n";
-    map<char, char> logInfo;
-    int Status = SUCCESS;
-    //
-    // Get logfile size
-    //
-    logfile.seekg(0, ios::beg);
-    logfile.seekg(0, ios::end);
-    size_t lfsize = logfile.tellg();
-    logfile.seekg(0, ios::beg);
-
-    if (lfsize == 0) {
-        Status = FILE_ERROR;
-        return Status;
-    }
-    cout << "file size: " << lfsize << endl;
-
-    HYBRID_ADVANCED_LOGGER_INFO* pLoggerInfo = (HYBRID_ADVANCED_LOGGER_INFO*) malloc(sizeof(HYBRID_ADVANCED_LOGGER_INFO));
-    if (pLoggerInfo == NULL) {
-		cout << "Failed to allocate memory for logger info\n";
-		Status = CONS_ERROR;
-		return Status;
-	}
-
-    logfile.read((char*)&pLoggerInfo->Signature, sizeof(pLoggerInfo->Signature));
-    cout << "Signature: " << pLoggerInfo->Signature << endl;
-
-    string sigStr = to_string(pLoggerInfo->Signature);
-
-   /* wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert;
-    string utf8 = convert.to_bytes(sigStr);*/
-
-    const char* sigTmp = sigStr.c_str();
-    cout << "Signature String: " << sigTmp << endl;
-
-
-    if (strcmp(sigTmp, "ALOG") != 0) {
-        cout << "Invalid signature\n";
-        Status = LOG_ERROR;
-        return Status;
-    }
-    // TODO process raw logBuffer into messages for output buffer
-    logfile.read((char*)&pLoggerInfo->Version, sizeof(pLoggerInfo->Version));
-    cout << "Version: " << pLoggerInfo->Version << endl;
-
-    logfile.seekg(2, ios::cur); // skip reserved field
-
-
-    /*const char* constBuf = reinterpret_cast<const char*>(bytesbuf.data());
-    outfstream.write(constBuf, lfsize);
-    if (outfstream.fail()) {
-        cout << "failed to write to file\n";
-		Status = FILE_ERROR;
-	}
-    */
-
-    //   // print buffer to file
-   // todo get 
-   // outfstream.write(buffer.data(), lfsize);
-
-    free((void*)pLoggerInfo);
-	return Status;
-}
-
-
 int main(int argc, char** argv)
 {
     fstream logfile;
-    ofstream outfstream;
     char* argFilename;
-    const char* newRawFilename = "out\\new_raw_logfile.bin";
-    const char* newOutFilename = "out\\new_parsed_logfile.txt";
+    const char* newRawFilename = ".\\new_raw_logfile.bin";
     int Status = 0;
 
     Status = ElevateCurrentPrivileges();
@@ -260,25 +188,6 @@ int main(int argc, char** argv)
         return CONS_ERROR;
     }
 
-    outfstream.open(newOutFilename, ios::out);
-    if (!logfile.is_open()) {
-        cout << "new logfile can't be opened\n";
-        Status = CONS_ERROR;
-        return Status;
-    }
-
-    //
-    // Process binary log file into messages
-    //
-    try {
-        ProcessMessages(logfile, outfstream);
-    }
-    catch (const exception& e) {
-		cerr << "Error: " << e.what() << endl;
-		return CONS_ERROR;
-	}
-
     logfile.close();
-    outfstream.close();
     return SUCCESS;
 }
