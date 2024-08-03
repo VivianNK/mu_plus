@@ -11,7 +11,7 @@
   PLATFORM_GUID                  = 1BF313CF-F093-42A9-8676-3445F2544295
   PLATFORM_VERSION               = 0.1
   DSC_SPECIFICATION              = 0x00010005
-  OUTPUT_DIRECTORY               = Build/AdvLoggerPkg
+  OUTPUT_DIRECTORY               = Build/AdvLoggerPkg/HostTest
   SUPPORTED_ARCHITECTURES        = IA32|X64
   SKUID_IDENTIFIER               = DEFAULT
   BUILD_TARGETS                  = NOOPT
@@ -29,6 +29,8 @@
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
+  DebugLib|AdvLoggerPkg/Library/BaseDebugLibAdvancedLogger/BaseDebugLibAdvancedLogger.inf
+  DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
 
   #
   # Mocked Libs
@@ -37,11 +39,25 @@
   MemoryAllocationLib|MdePkg/Test/Mock/Library/GoogleTest/MockMemoryAllocationLib/MockMemoryAllocationLib.inf
   UefiBootServicesTableLib|MdePkg/Test/Mock/Library/GoogleTest/MockUefiBootServicesTableLib/MockUefiBootServicesTableLib.inf
 
+[LibraryClasses.X64]
+  AdvancedLoggerLib|AdvLoggerPkg/Library/AdvancedLoggerLib/Dxe/AdvancedLoggerLib.inf
+  AssertLib|AdvLoggerPkg/Library/AssertLib/AssertLib.inf
+
 ################################################################################
 #
 # Components section - list of all Components needed by this Platform.
 #
 ################################################################################
 [Components]
+  #
+  # Build HOST_APPLICATION that tests AdvLoggerPkg
+  #
   AdvLoggerPkg/AdvLoggerOsConnectorPrm/Library/AdvLoggerOsConnectorPrmConfigLib/GoogleTest/AdvLoggerPrmConfigLibGoogleTest.inf
   AdvLoggerPkg/AdvLoggerOsConnectorPrm/GoogleTest/AdvLoggerOsConnectorPrmGoogleTest.inf
+  AdvLoggerPkg/Library/AdvancedLoggerLib/Dxe/GoogleTest/AdvancedLoggerDxeLibGoogleTest.inf { # TODO check dsc spec for formatting
+    <LibraryClasses>
+      # AdvancedLoggerLib|AdvLoggerPkg/Library/AdvancedLoggerLib/Dxe/AdvancedLoggerLib.inf
+      # DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+    <PcdsFixedAtBuild> 
+      # gAdvLoggerPkgTokenSpaceGuid.PcdAdvLoggerEnable|TRUE
+  }
