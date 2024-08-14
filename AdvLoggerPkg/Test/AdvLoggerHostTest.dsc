@@ -66,4 +66,5 @@
     <LibraryClasses>
       # TODO try a null lib?
       AdvancedLoggerLib|AdvLoggerPkg/Library/AdvancedLoggerLib/Dxe/AdvancedLoggerLib.inf
+      DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
   }

@@ -10,6 +10,9 @@
 #include <GoogleTest/Library/MockUefiBootServicesTableLib.h>
 #include <GoogleTest/Protocol/MockAdvancedLogger.h>
 // #include <GoogleTest/Protocol/MockDebugPort.h> // TODO mock DebugPort Protocol
+/*#include <Protocol/AdvancedLogger.h>
+  #include <Library/UefiBootServicesTableLib.h>
+*/
 
 extern "C" {
   #include <Uefi.h>
@@ -127,6 +130,7 @@ TEST_F (AdvancedLoggerWriteTest, AdvLoggerWriteInvalidBuffer) {
 
 /* Passing an invalid buffer - should be caught/handled by the protocol */
 TEST_F (AdvancedLoggerWriteTest, AdvLoggerWriteZeroBytes) {
+  mInitialized = FALSE;
   UINTN NumberOfBytesZero = 0;
 
   EXPECT_CALL (
@@ -162,6 +166,7 @@ TEST_F (AdvancedLoggerWriteTest, AdvLoggerWriteZeroBytes) {
 
 /* Passing a mismatched signature. Asserts are disables so it will continue */
 TEST_F (AdvancedLoggerWriteTest, AdvLoggerWriteFailMismatchedSignature) {
+  mInitialized = FALSE;
   gALProtocol->Signature = SIGNATURE_32 ('T', 'E', 'S', 'T');
 
   EXPECT_CALL (
