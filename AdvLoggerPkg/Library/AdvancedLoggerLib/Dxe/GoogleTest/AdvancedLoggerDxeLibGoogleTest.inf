@@ -21,6 +21,7 @@ VERSION_STRING = 1.0
 #
 
 [Sources]
+  # ../AdvancedLoggerLib.c
   AdvancedLoggerDxeLibGoogleTest.cpp
   ../../../../Test/Mock/Library/GoogleTest/Protocol/MockAdvancedLogger.cpp
   # MdePkg/Test/Mock/Library/GoogleTest/Protocol/MockDebugPort.cpp TODO: Uncomment when MockDebugPort is available
@@ -38,7 +39,8 @@ VERSION_STRING = 1.0
 
 [Protocols]
   gAdvancedLoggerProtocolGuid   ## CONSUMES
-  gEfiDebugPortProtocolGuid     ## SOMETIMES_CONSUMES
+  gEfiDebugPortProtocolGuid     ## CONSUMES
 
 [Pcd]
-  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel  ## SOMETIMES_CONSUMES
+  gAdvLoggerPkgTokenSpaceGuid.PcdAdvancedLoggerHdwPortDebugPrintErrorLevel  ## CONSUMES
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask ## CONSUMES
